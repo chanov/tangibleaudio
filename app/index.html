@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Tangible Audio</title>
+	<link rel="stylesheet" href="">
+	<script src="js/pixi.dev.js"></script>
+	<script src="js/matter.js"></script>
+	<script src="js/perlin.js"></script>
+	<script src="js/tones.js"></script>
+	<script src="js/chroma.min.js"></script>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="apple-touch-icon" sizes="57x57" href="apple-touch-icon-57x57.png" />
+<link rel="apple-touch-icon" sizes="72x72" href="apple-touch-icon-72x72.png" />
+<link rel="apple-touch-icon" sizes="76x76" href="apple-touch-icon-76x76.png" />
+<link rel="apple-touch-icon" sizes="114x114" href="apple-touch-icon-114x114.png" />
+<link rel="apple-touch-icon" sizes="120x120" href="apple-touch-icon-120x120.png" />
+<link rel="apple-touch-icon" sizes="144x144" href="apple-touch-icon-144x144.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-152x152.png" />
+	<style>
+		@font-face {
+			font-family: 'f37_gingerbold';
+			src: url(fonts/f37-regular.eot);
+			src: url(fonts/f37-regular.eot?#iefix) format('embedded-opentype'),
+			url(fonts/f37-regular.woff) format('woff'),
+			url(fonts/f37-regular.ttf) format('truetype'),
+			url(fonts/f37-regular.svg#f37_gingerbold) format('svg');
+			font-weight: normal;
+			font-style: normal;
+		}
+
+		body{
+			margin:0;
+			padding:0;
+			overflow-y: hidden;
+			overflow-x: hidden;
+			font-family: 'f37_gingerbold', Helvetica;
+
+			position: absolute;
+			-moz-user-select: none;
+			-webkit-user-select: none;
+			-ms-user-select: none;
+
+		}
+
+		#container {
+		}
+
+		#info {
+			position: absolute;
+		}
+
+		#textwrapper {
+
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+
+			display: -webkit-flex;
+			-webkit-flex-direction: column;
+			-webkit-justify-content: center;
+			-webkit-align-items: center;
+
+
+			width:100%;
+			height: 100%;
+			z-index:2;
+			position: absolute;
+			color:#333;
+			text-align:center;
+			pointer-events:none;
+
+		}
+		#textwrapper div {
+			width:50%;
+		}
+		#text h1 span{
+			display: inline;
+			/*background: white;*/
+			font-size: .8em;
+			font-weight:normal;
+			padding:.3em 0;
+
+			line-height: 1em;
+			color: #515151;
+			/*box-shadow: 10px 0 0 white, -10px 0 0 white;*/
+
+		}
+
+
+		@media (max-width: 600px) {
+			h1 {
+				font-size: 1.8em;
+				line-height: 1em;
+			}
+
+			font-size: 1.8em;
+			line-height: 0.7em;
+
+		}
+
+
+	}
+	h1 {
+		font-weight: normal;
+	}
+
+	.formcont {
+		margin-top:1em;
+	}
+	
+
+
+
+	
+	
+
+
+	#button {
+		display: inline-block;
+
+
+		-webkit-box-shadow:    0 4px 0 #7a0a17;
+		-moz-box-shadow: 0 4px 0 #7a0a17;
+		box-shadow: 0 4px 0 #7a0a17;
+
+		-webkit-transition: -webkit-box-shadow .1s ease-in-out;
+		-moz-transition: -moz-box-shadow .1s ease-in-out;
+		-o-transition: -o-box-shadow .1s ease-in-out;
+		transition: box-shadow .1s ease-in-out;
+
+	}
+
+	#button span {
+		display: inline-block;
+		padding:1em;
+		border:none;
+		margin:0;
+		font-size:0.9em;
+		font-family:  'f37_gingerbold';
+		pointer-events:auto;
+		background: #e42532;
+		cursor:pointer;
+		color: white;
+		text-decoration: none;
+
+
+		-webkit-box-shadow: inset 0 -1px 1px rgba(255, 255, 255, .15);
+		-moz-box-shadow: inset 0 -1px 1px rgba(255, 255, 255, .15);
+		box-shadow: inset 0 -1px 1px rgba(255, 255, 255, .15);
+		line-height: 1;
+		text-shadow: 0 -1px 1px rgba(175, 49, 95, .7);
+
+		-webkit-transition: background-color .2s ease-in-out, -webkit-transform .1s ease-in-out;
+		-moz-transition: background-color .2s ease-in-out, -moz-transform .1s ease-in-out;
+		-o-transition: background-color .2s ease-in-out, -o-transform .1s ease-in-out;
+		transition: background-color .2s ease-in-out, transform .1s ease-in-out;
+	}
+
+	#button:hover span {
+		background-color: #e42532;
+	}
+
+	#button:active, #button:focus {
+		/*-webkit-box-shadow:    0 8px 0 #c5376d, 0 12px 10px rgba(0, 0, 0, .3);
+		-moz-box-shadow: 0 8px 0 #c5376d, 0 12px 10px rgba(0, 0, 0, .3);
+		box-shadow:    0 8px 0 #c5376d, 0 12px 10px rgba(0, 0, 0, .3);
+	*/}
+
+	#button:active span {
+		-webkit-transform: translate(0, 4px);
+		-moz-transform: translate(0, 4px);
+		-o-transform: translate(0, 4px);
+		transform: translate(0, 4px);
+	}
+
+	
+
+
+</style>
+</head>
+<body>
+
+	<div id="textwrapper">
+		<div id="text">
+			<h1> <span>A new way for children to discover and express sound imagination away from the screen.</span></h1>
+			<p>Coming to Kickstarter November 2014.</p>
+		</div>
+		<div class="formcont">
+			<a href="http://eepurl.com/3JGTn" id="button"><span>Want to know more?</span></a>
+		</div>
+	</div>
+
+	<div id="container"></div>
+
+
+	<script src="js/toot.js"></script>
+
+
+</body>
+</html>
