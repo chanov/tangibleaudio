@@ -19,81 +19,228 @@ var Mouse = Matter.Mouse;
 var Constraint = Matter.Constraint;
 var Sleeping = Matter.Sleeping;
 
+var mouse;
+var mouseConstraint;
+var draggingCircle = false;
+var isMuted = false;
 
 var containerNode = document.getElementById("container");
 var colors = ["#7eccdd","#fdd052","#f9ab58", "#8dcdb0"];
 var redColor = "#e42532"; 
+// var greyColor = "red";
 var greyColor = "#f5eee3";
 
+
+$("#audiobutton i").click(function(event) {
+	event.preventDefault();
+	isMuted = !isMuted;
+	$(this).removeClass("fa-audio-on fa-audio-off").addClass("fa-audio-"+(isMuted ? "off":"on"));
+
+});
+
 var shapes = [];
+var bounds = [];
 var notes = ["c", "d", "e", "g", "a", "c", "d"];
 
 var tiltFB =0;
-
-var renderer = Render.create({
-	element: containerNode,
-	options: {
-		width: w,
-		height: h
-	}
-});
-
-var engineOptions = {
-	render: renderer
-};
-
-
-this.engine = Engine.create(containerNode, engineOptions);
-this.engine.render.options.hasBounds = true;
-
-this.engine.world = World.create({
-	bounds: {
-		min:{x:0,y:0},
-		max:{x:w,y:h}
-	},
-	gravity: {
-		x: 0,
-		y: 0
-	}
-});
-
-this.engine.render.options.showVelcotiy = false;
-this.engine.render.options.showAngleIndicator = false;
-this.engine.render.options.wireframes = false;
-this.engine.render.options.background = greyColor;
-
+var tiltLR =0;
 
 var dir =0;
+var engine;
 
+/* solids */
+var circle;
+
+var startButton = document.getElementById("start");
+startButton.onclick = startButton.ontouch = start.bind(this);
+
+createEngine();
+
+/* setup tones */
 tones.attack = 0;
-tones.volume = .4;
+tones.volume = 0.4;
 tones.release = 300;
 tones.type = "sine";
 
+var iOS = /(iPad|iPhone|iPod)/g.test( navigator.userAgent );
+
+if(!iOS) {
+	$("#start").hide();
+	start();
+} 
+
+function createEngine() {
+
+	var renderer = Render.create({
+		element: containerNode,
+		options: {
+			width: w,
+			height: h
+		}
+	});
+
+	var engineOptions = {
+		render: renderer
+	};
+
+	engine = Engine.create(containerNode, engineOptions);
+	engine.render.options.hasBounds = true;
+
+	engine.world = World.create({
+		bounds: {
+			min:{x:0,y:0},
+			max:{x:w,y:h}
+		},
+		gravity: {
+			x: 0,
+			y: 0
+		}
+	});
+
+	engine.render.options.showVelcotiy = false;
+	engine.render.options.showAngleIndicator = false;
+	engine.render.options.wireframes = false;
+	engine.render.options.background = greyColor;
 
 
-var t = 40;
+
+	window.onresize = onResize.bind(this);
+
+	onResize();
+	
+	
+	
+	Engine.run(engine);
 
 
 
-var optionsBounds = {
-	isStatic: true,
-	render: {
-		strokeStyle:  "#f5eee3",
-		fillStyle:  "#f5eee3",
-		strokeWidth:0
+
+	if (window.DeviceOrientationEvent) {
+		window.addEventListener('deviceorientation', function(eventData) {
+			
+			tiltLR = eventData.gamma;
+
+			tiltFB = eventData.beta || 0;
+
+			dir = eventData.alpha;
+
+			deviceOrientationHandler(tiltLR, tiltFB, dir);
+		}, false);
+	} 
+
+}
+
+
+function onResize() {
+	w = window.innerWidth;
+	h = window.innerHeight;
+
+	$("#audiocheck").css("top", w/30+"px").css("right", w/20+"px");
+
+	engine.world.bounds.max.x = w;
+	engine.world.bounds.max.y = h;
+
+	engine.render.context.canvas.width  = window.innerWidth;
+	engine.render.context.canvas.height = window.innerHeight;
+
+	if(bounds.length) {
+		for (var i = 0; i < bounds.length; i++) {
+			World.remove(engine.world, bounds[i]);
+		}
 	}
-};
 
-createBounds();
+	createBounds();
+
+}
+
+function start() {
+	
+	playTone("c");
+	
+	setTimeout(function() {
+		$("#start").addClass("hidden");
+		setTimeout(function() {
+			$("#text").removeClass("hidden");
+
+			setTimeout(function() {
+				$("#text").css("opacity", 1);
+			}, 1000);
+
+			$("#formcont").removeClass("hidden");
+			setTimeout(function() {
+				$("#formcont").css("opacity", 1);
+			}, 3000);
+
+		}, 1000);
+	},200);
+
+
+	var size = Math.round(w / 30);
+	circle = Bodies.circle ( w/2,h/2,  size, {
+		density: 0.0005,
+		frictionAir: 0.01,
+		restitution: 0.9,
+		friction: 0.01,
+		render: {
+			fillStyle: redColor,
+			strokeStyle: redColor
+		}
+	} );
+
+
+	var forceMultiplier = w / 100;
+	Body.setVelocity (circle, {x:(Math.random()*2 -1)*5,y:(Math.random()*2 -1)*5});
+	shapes.push(circle);
+
+	mouse = Mouse.create(engine.render.canvas);
+	mouseConstraint = Constraint.create({ 
+		pointA: mouse.position,
+		pointB: { x: 0, y: 0 },
+		length: 0.001, 
+		stiffness: 0.1,
+		angularStiffness: 1,
+
+		render: {
+			visible:false
+		}
+	});
+
+
+	var c = Composite.create();
+	Composite.addBody(c,circle);
+	Composite.addConstraint(c, mouseConstraint);
+	World.add(engine.world, c);
+
+	Events.on(engine, 'beforeTick',beforeTick.bind(this));
+	Events.on(engine, 'tick',tick.bind(this));
+	Events.on(engine, 'collisionStart', onCollisionStart.bind(this));
+
+
+}
+
+function playTone(n) {
+	if(!isMuted) {
+		tones.play(n);
+	}
+}
 
 function createBounds() {
-
+	var optionsBounds = {
+		isStatic: true,
+		render: {
+			// strokeStyle:  "#fff000",
+			strokeStyle:  "#f5eee3",
+			fillStyle:  "#f5eee3",
+			strokeWidth:0
+		}
+	};
+	var t = w/30;
 	var left = Bodies.rectangle(t/2, (h-t)/2+t, t, h-t, optionsBounds);
 	var topi = Bodies.rectangle((w- t)/2 , t/2, w - t, t, optionsBounds);
 	var right = Bodies.rectangle(w-t/2, (h-t)/2, t, h-t, optionsBounds);
 	var bottom = Bodies.rectangle((w- t)/2+t, h-t/2, w-t, t, optionsBounds);
 	bounds = [left, topi, right, bottom];
+
 
 	left.color = colors[0];
 	topi.color = colors[1];
@@ -111,130 +258,13 @@ function createBounds() {
 	topi.isbounds =true;
 	bottom.isbounds =true;
 
-	World.add(this.engine.world, [left,topi,bottom,right]);
+	World.add(engine.world, [left,topi,bottom,right]);
 
 } 
 
 
 
 
-
-
-var self = this;
-window.onresize = function() {
-	w = window.innerWidth;
-	h = window.innerHeight;
-
-	this.engine.world.bounds.max.x = w;
-	this.engine.world.bounds.max.y = h;
-	
-	this.engine.render.context.canvas.width  = window.innerWidth;
-	this.engine.render.context.canvas.height = window.innerHeight;
-
-
-	for (var i = 0; i < bounds.length; i++) {
-		World.remove(this.engine.world, bounds[i]);
-	}
-
-	createBounds();
-
-	// self.engine.render.options.width =w;
-	// self.engine.render.options.height =h;
-	// setSolid(right, w-t, 0, t, h-t*2);
-
-	// setSolid(left, t/2, (h-t)/2+t, t, h-t);
-	// setSolid(topi, (w- t)/2 , t/2, w - t, t);
-	// setSolid(right, w-t/2, (h-t)/2, t, h-t);
-	// setSolid(bottom, (w- t)/2+t, h-t/2, w-t, t);
-
-
-	// setSolid(w-t/2, t/2, t, h-t*2);
-
-}.bind(this);
-
-function setSolid(solid, x,y,w,h) {
-	console.log(x,y,w)
-	Body.setVertices(solid, [{ x: x, y: y }, { x: x+w, y: y }, { x: x+w, y: h }, { x: x, y: h }]);
-
-}
-
-
-
-
-
-var i =0;
-
-noise.seed(Math.random());
-
-var size = Math.round(w / 30);
-var b = Bodies.circle ( w/2,h/2,  size, {
-	density: 0.0005,
-	frictionAir: 0.01,
-	restitution: 0.9,
-	friction: 0.01,
-
-	render: {
-		fillStyle: redColor,
-		strokeStyle: redColor
-	}
-} );
-
-
-
-b.force = {x:(Math.random()*2 -1)/10,y:(Math.random()*2 -1)/10}
-b.collider = true;
-shapes.push(b);
-
-
-
-
-var c = Composite.create();
-
-var mouse = Mouse.create(engine.render.canvas);
-var mouseConstraint = Constraint.create({ 
-	pointA: mouse.position,
-	pointB: { x: 0, y: 0 },
-	length: 0.001, 
-	stiffness: 0.1,
-	angularStiffness: 1,
-
-	render: {
-		visible:false
-	}
-});
-
-
-Composite.addBody(c,b);
-Composite.addConstraint(c,mouseConstraint);
-
-
-World.add(this.engine.world, c);
-Engine.run(this.engine);
-
-init();
-
-Events.on(this.engine, 'beforeTick',beforeTick.bind(this));
-Events.on(this.engine, 'tick',tick.bind(this));
-Events.on(this.engine, 'collisionStart', onCollisionStart.bind(this))
-
-
-
-/* ----------------------- */
-
-function init() {
-	if (window.DeviceOrientationEvent) {
-		window.addEventListener('deviceorientation', function(eventData) {
-			tiltLR = eventData.gamma;
-
-			tiltFB = eventData.beta || 0;
-
-			dir = eventData.alpha
-
-			deviceOrientationHandler(tiltLR, tiltFB, dir);
-		}, false);
-	} else {
-	}
-}
 
 function addPolygon(index) {
 	var sides = 3+index;
@@ -249,14 +279,16 @@ function addPolygon(index) {
 		friction: 0.01,
 		render: {
 			lineWidth: 2,
+			fillAlpha: 0,
 			fillStyle: greyColor
 		}
 	} );
-	b.force = {x:(Math.random()*2 -1)/100,y:(Math.random()*2 -1)/100}
+	var forceMultiplier = w / 100;
+	Body.setVelocity(b, {x:(Math.random()*2 -1),y:(Math.random()*2 -1)});
 	b.color = b.render.strokeStyle = colors[index];
 	b.note =  notes[index];
 	shapes.push(b);
-	World.add(this.engine.world, b);
+	World.add(engine.world, b);
 }
 
 
@@ -273,9 +305,9 @@ function onCollisionStart (event) {
 		// length = Math.min(length, 100);
 		// var noteIndex = Math.round(length/100*notes.length);
 		// console.log(length/100*notes.length)
-		collide([pair.bodyA, pair.bodyB]);
-		// tones.play(pair.bodyB.note);
-		// tones.play(notes[noteIndex]);
+		if(pair.bodyA == circle || pair.bodyB == circle ) collide([pair.bodyA, pair.bodyB]);
+		// playTone(pair.bodyB.note);
+		// playTone(notes[noteIndex]);
 
 	}
 }
@@ -283,73 +315,49 @@ function onCollisionStart (event) {
 
 
 function collide(a) {
-	if(!a[0].collider && !a[1].collider) return;
 
 	// console.log("col")
-	var boundObject;
-	var collider, noncollider;
-	var soundsPLayed =0;
+	var noncollider;
 
-	for (var i = 0; i < a.length; i++) {
-		if(a[i].isbounds)  {
-			boundObject = a[i];
-		} else {
-			(a[i].collider) ? collider = a[i] : noncollider =a[i];
-		}
-	}
+	var collidedSolid = (a[0] == circle) ? a[1] : a[0];
 
-	if(boundObject) { 
+
+	if(collidedSolid.isbounds) { 
 		
-		if(soundsPLayed < 4) {
-			tones.play(boundObject.note);
-			soundsPLayed++;
-		}
-
-		fadeColor(boundObject, boundObject.color, 400, true);
+		fadeColor(collidedSolid, collidedSolid.color, 400, true);
 		var t = setTimeout( function() {
-			fadeColor(boundObject, greyColor, 400, true);
+			fadeColor(collidedSolid, greyColor, 400, true);
+			clearTimeout(t);
 		}, 2000);
+		addPolygon(colors.indexOf(collidedSolid.color));
+		playTone(collidedSolid.note);
 
-		addPolygon(colors.indexOf(boundObject.color));
 	} else  { 
-
-		if(soundsPLayed < 4) {
-			tones.play(noncollider.note);
-			soundsPLayed++;
-		}
-		fadeColor(noncollider,  noncollider.color, 400, false);
+		fadeColor(collidedSolid,  collidedSolid.color, 400, false);
 		var t = setTimeout( function() {
-			fadeColor(noncollider, greyColor, 400, false);
+			fadeColor(collidedSolid, greyColor, 400, false, function(){
+				collidedSolid.fillAlpha = 0;
+			});
+			clearTimeout(t);
 		}, 2000);
+		playTone(collidedSolid.note);
 
-	}
-
-
-
-	// function fadeToWhite(solid) {
-	// 	fadeColor(solid, "#f5eee3");
-	// 	var t = setTimeout( function() {
-	// 		fadeColor(solid, greyColor);
-	// 	}, 1000);
-	// }
-
-	function fadeToColor(solid, start, end, alsoStroke) {
-		fadeColor(solid, start, 400, alsoStroke);
-		var t = setTimeout( function() {
-			fadeColor(solid, end, 400, alsoStroke);
-		}, 2000);
 	}
 
 }
 
 
-function fadeColor(boundObject, endColor, duration, alsoStroke) {
+function fadeColor(boundObject, endColor, duration, alsoStroke, callback) {
+	
+	boundObject.render.fillAlpha = 1;
+	
 	var interval = 10;
 	var steps =  duration / interval;
 	var step_u = 1.0 / steps;
 	var u = 0.0;
 	var theInterval = setInterval(function() {
 		if (u >= 1.0) {
+			if(callback) callback();
 			clearInterval(theInterval);
 		}
 		
@@ -396,54 +404,57 @@ function hexToRgb(hex) {
 
 
 function beforeTick() {
-	if(b.speed > 30) {
-		var vel = b.velocity;
+	if(circle.speed > 10) {
+		var vel = circle.velocity;
 		vel = Vector.normalise(vel);
-		vel = Vector.mult(vel, 30);
-		Body.setVelocity(b,vel)
+		vel = Vector.mult(vel, 10);
+		Body.setVelocity(circle,vel);
 	}
 }
 
 
 function tick(t) {
-	// this.engine.world.gravity.x = Math.cos(t.timestamp)*.9;
-	// this.engine.world.gravity.y = Math.sin(t.timestamp)*.9;
-
-
 	updateConstraint();
+	var afb = Math.abs(tiltFB);
+	var lrb = Math.abs(tiltLR);
+	var gx = afb > 1 ? Math.min(afb, 1) : 0;
+	var gy = lrb > 1 ? Math.min(lrb, 1) : 0;
 
-	this.engine.world.gravity.y = tiltFB/1000;
-	
-	var a= t.timestamp/1000;
-	// for (var i = 1; i < shapes.length; i++) {
-	// 	// n/=1000;
-	// 	var n = noise.simplex3(shapes[i].position.x/100, shapes[i].position.y/100, a);
-	// 	var a = n*Math.PI*2;
-	// 	// shapes[i].force = {x:Math.cos(a)*n,y:Math.sin(a)*n}
-	// 	// shapes[i].torque =n/100;// {x:Math.cos(a)*n,y:Math.sin(a)*n}
-	// 	Matter.Body.applyForce ( shapes[i], shapes[i].position, {x:Math.cos(a)/10000,y:Math.sin(a)/10000})
-	// };
+	var isContaining =Bounds.contains(circle.bounds, mouse.position);
+	containerNode.style.cursor = (isContaining || draggingCircle) ? "pointer" :"auto";
 
-	// console.log(n)
+	if(iOS) {
+		if(window.innerWidth > window.innerHeight) { 
+			engine.world.gravity.y = tiltLR > 0 ? gy : -gy;			
+			engine.world.gravity.x = tiltFB < 0 ? gx : -gx; 
+			//x is inverted
+		} else {
+			engine.world.gravity.x = tiltLR > 0 ? gy : -gy;
+			engine.world.gravity.y = tiltFB < 0 ? -gx : gx;
+		}
+	} else {
+		engine.world.gravity.x = tiltLR > 0 ? gy : -gy;
+		engine.world.gravity.y = tiltFB < 0 ? -gx : gx;
+	}
 
 }
 
 
 function updateConstraint() {
-
 	if (mouse.button === 0) {
 		if (!mouseConstraint.bodyB) {
-			var body = b;
+			var body = circle;
 			if (Bounds.contains(body.bounds, mouse.position)  && Vertices.contains(body.vertices, mouse.position)) {
 				mouseConstraint.pointA = mouse.position;
 				mouseConstraint.bodyB = body;
 				mouseConstraint.pointB = { x: mouse.position.x - body.position.x, y: mouse.position.y - body.position.y };
 				mouseConstraint.angleB = body.angle;
+				draggingCircle =true;
 				Sleeping.set(body, false);
-				console.log(mouseConstraint)
 			}
 		}
 	} else {
+		draggingCircle =false;
 		mouseConstraint.bodyB = null;
 		mouseConstraint.pointB = null;
 	}
@@ -458,9 +469,10 @@ function updateConstraint() {
 
 
 function deviceOrientationHandler(tiltLR, tiltFB, dir) {
-	// document.getElementById("pressed").innerHTML = Math.round(pressed);
-	// document.getElementById("doTiltLR").innerHTML = Math.round(tiltLR);
-	// document.getElementById("doTiltFB").innerHTML = Math.round(tiltFB);
-	// document.getElementById("doDirection").innerHTML = Math.round(dir);
+	document.getElementById("gx").innerHTML = "gx " + Math.round(engine.world.gravity.x);
+	document.getElementById("gy").innerHTML = "gy " + Math.round(engine.world.gravity.y);
+	document.getElementById("lr").innerHTML = "lr " + Math.round(tiltLR);
+	document.getElementById("fb").innerHTML = "fb " + Math.round(tiltFB);
+	document.getElementById("dir").innerHTML = "dir " + Math.round(tiltFB);
 
 }

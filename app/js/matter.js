@@ -6708,13 +6708,17 @@ var Render = {};
                     if (options.showSleeping && body.isSleeping) {
                         c.fillStyle = Common.shadeColor(body.render.fillStyle, 50);
                     } else {
-                        c.fillStyle = body.render.fillStyle;
+                        c.fillStyle = body.render.  fillStyle;
                     }
 
                     c.lineWidth = body.render.lineWidth;
                     c.strokeStyle = body.render.strokeStyle;
+                    if(body.render.fillAlpha !=null) {
+                        c.globalAlpha = body.render.fillAlpha;
+                    }
                     c.fill();
-                    c.stroke();
+                    c.globalAlpha = 1;
+                    if(c.lineWidth) c.stroke();
                 } else {
                     c.lineWidth = 1;
                     c.strokeStyle = '#bbb';
