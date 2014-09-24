@@ -38,7 +38,7 @@ gulp.task('html', ['styles', 'scripts'], function () {
         .pipe(cssFilter.restore())
         .pipe($.useref.restore())
         .pipe($.useref())
-        .pipe(gulp.dest('dist'))
+        .pipe(gulp.dest('../live'))
         .pipe($.size());
 });
 
@@ -49,7 +49,7 @@ gulp.task('images', function () {
             progressive: true,
             interlaced: true
         })))
-        .pipe(gulp.dest('dist/images'))
+        .pipe(gulp.dest('../live/images'))
         .pipe($.size());
 });
 
@@ -57,17 +57,17 @@ gulp.task('fonts', function () {
     return $.bowerFiles()
         .pipe($.filter('**/*.{eot,svg,ttf,woff}'))
         .pipe($.flatten())
-        .pipe(gulp.dest('dist/fonts'))
+        .pipe(gulp.dest('../live/fonts'))
         .pipe($.size());
 });
 
 gulp.task('extras', function () {
     return gulp.src(['app/*.*',  '!app/*.html'], { dot: true })
-        .pipe(gulp.dest('dist'));
+        .pipe(gulp.dest('../live'));
 });
 
 gulp.task('clean', function () {
-    return gulp.src(['.tmp', 'dist'], { read: false }).pipe($.clean());
+    return gulp.src(['.tmp', '../live'], { read: false }).pipe($.clean());
 });
 
 gulp.task('build', ['html', 'images',  'extras']);
