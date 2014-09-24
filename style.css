@@ -80,6 +80,7 @@
 			position: relative;
 			top:0;
 			font-size: 2em;
+			display: none;
 		}
 		
 		#start.hidden {
