@@ -184,6 +184,7 @@
 
 	
 	#audiocheck {
+		display: none;
 		z-index:4;
 		position: absolute;
 		pointer-events: none;
