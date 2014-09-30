@@ -53,15 +53,15 @@ var circle;
 var startButton = document.getElementById("start");
 
 $('.fa-facebook').on('click', function() {
-  ga('send', 'event', 'button', 'click', 'facebook');
+	ga('send', 'event', 'button', 'click', 'facebook');
 });
 
 $('.fa-twitter').on('click', function() {
-  ga('send', 'event', 'button', 'click', 'twitter');
+	ga('send', 'event', 'button', 'click', 'twitter');
 });
 
 $('#knowmore').on('click', function() {
-  ga('send', 'event', 'button', 'click', 'knowmore');
+	ga('send', 'event', 'button', 'click', 'knowmore');
 });
 
 
@@ -198,6 +198,7 @@ function onResize() {
 function start() {
 	
 	if(iOS) playTone("c");
+			addCircle();
 	
 	var k = setTimeout(function() {
 		$("#start").addClass("hidden");
@@ -206,17 +207,26 @@ function start() {
 
 			setTimeout(function() {
 				$("#text").css("opacity", 1);
+
 			}, 1000);
 
 			$("#formcont").removeClass("hidden");
 			setTimeout(function() {
 				$("#formcont").css("opacity", 1);
+
 			}, 3000);
+
+
 
 		}, 1000);
 	},200);
 
 
+
+}
+
+
+function addCircle() {
 	var size = Math.round(w / 30);
 	circle = Bodies.circle ( w/2,h/2,  size, {
 		density: 0.0005,
@@ -230,7 +240,7 @@ function start() {
 	} );
 
 
-	Body.setVelocity (circle, {x:(Math.random()*2 -1)*10,y:(Math.random()*2 -1)*10});
+	Body.setVelocity (circle, {x:(Math.random()*2 -1)*10,y:-10});
 	shapes.push(circle);
 
 	mouse = Mouse.create(engine.render.canvas);
@@ -256,14 +266,13 @@ function start() {
 	Events.on(engine, 'tick',tick.bind(this));
 	Events.on(engine, 'collisionStart', onCollisionStart.bind(this));
 
-
 }
 
 function playTone(n) {
-	// if(!isMuted && new Date() - prevDate > 100) {
-	// 	prevDate = new Date();
-	// 	window.tones.play(n);
-	// }
+	if(!isMuted && new Date() - prevDate > 100) {
+		prevDate = new Date();
+		window.tones.play(n);
+	}
 }
 
 function createBounds() {
