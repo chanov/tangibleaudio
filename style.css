@@ -35,7 +35,12 @@
 		#info {
 			position: absolute;
 		}
+	
+		#container {
+			-webkit-transform: translateZ(0);
+		}
 
+		
 		#textwrapper {
 
 			display: flex;
