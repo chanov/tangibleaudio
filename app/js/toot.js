@@ -4,14 +4,14 @@ var h = window.innerHeight;
 
 // Matter aliases
 var Render = Matter.Render;
-var RenderPixi = Matter.RenderPixi;
+// var RenderPixi = Matter.RenderPixi;
 var World = Matter.World;
 var Bounds = Matter.Bounds;
 var Vertices = Matter.Vertices;
 var Engine = Matter.Engine;
 var Events = Matter.Events;
 var Composite = Matter.Composite;
-var Composites = Matter.Composites;
+// var Composites = Matter.Composites;
 var Vector = Matter.Vector;
 var Bodies = Matter.Bodies;
 var Body = Matter.Body;
@@ -30,13 +30,12 @@ var redColor = "#e42532";
 // var greyColor = "red";
 var greyColor = "#f5eee3";
 
+var isThankYou = window.location.hash ? (window.location.hash.substring(1)=="thankyou") : false;
+var iOS = /(iPad|iPhone|iPod)/g.test( navigator.userAgent );
+var prevDate = 0;
 
-$("#audiobutton i").click(function(event) {
-	event.preventDefault();
-	isMuted = !isMuted;
-	$(this).removeClass("fa-audio-on fa-audio-off").addClass("fa-audio-"+(isMuted ? "off":"on"));
 
-});
+
 
 var shapes = [];
 var bounds = [];
@@ -52,22 +51,67 @@ var engine;
 var circle;
 
 var startButton = document.getElementById("start");
-startButton.onclick = startButton.ontouch = start.bind(this);
 
-createEngine();
+$('.fa-facebook').on('click', function() {
+  ga('send', 'event', 'button', 'click', 'facebook');
+});
 
-/* setup tones */
-tones.attack = 0;
-tones.volume = 0.4;
-tones.release = 300;
-tones.type = "sine";
+$('.fa-twitter').on('click', function() {
+  ga('send', 'event', 'button', 'click', 'twitter');
+});
 
-var iOS = /(iPad|iPhone|iPod)/g.test( navigator.userAgent );
+$('#knowmore').on('click', function() {
+  ga('send', 'event', 'button', 'click', 'knowmore');
+});
 
-if(!iOS) {
-	$("#start").hide();
-	start();
-} 
+
+
+
+
+function init() {
+	$("#audiobutton i").click(function(event) {
+		event.preventDefault();
+		isMuted = !isMuted;
+		$(this).removeClass("fa-audio-on fa-audio-off").addClass("fa-audio-"+(isMuted ? "off":"on"));
+	});
+
+	$("#audiocheck").show();
+
+	/* setup window.tones */
+	window.tones.attack = 0;
+	window.tones.volume = 0.4;
+	window.tones.release = 300;
+	window.tones.type = "sine";
+
+	createEngine();
+
+	if(!isThankYou) {
+		setupInteraction();
+	} else {
+		$("#text").html("<h1>Thank you</h1>");
+		$("#knowmore").remove();
+		start();
+	}
+
+}
+
+init();
+
+
+
+
+
+function setupInteraction() {
+	startButton.onclick = startButton.ontouch = start.bind(this);
+
+	if(!iOS) {
+		$("#start").hide();
+		start();
+	} else{
+		$("#start").show();
+	}
+}
+
 
 function createEngine() {
 
@@ -123,8 +167,6 @@ function createEngine() {
 			tiltFB = eventData.beta || 0;
 
 			dir = eventData.alpha;
-
-			deviceOrientationHandler(tiltLR, tiltFB, dir);
 		}, false);
 	} 
 
@@ -155,9 +197,9 @@ function onResize() {
 
 function start() {
 	
-	playTone("c");
+	if(iOS) playTone("c");
 	
-	setTimeout(function() {
+	var k = setTimeout(function() {
 		$("#start").addClass("hidden");
 		setTimeout(function() {
 			$("#text").removeClass("hidden");
@@ -188,8 +230,7 @@ function start() {
 	} );
 
 
-	var forceMultiplier = w / 100;
-	Body.setVelocity (circle, {x:(Math.random()*2 -1)*5,y:(Math.random()*2 -1)*5});
+	Body.setVelocity (circle, {x:(Math.random()*2 -1)*10,y:(Math.random()*2 -1)*10});
 	shapes.push(circle);
 
 	mouse = Mouse.create(engine.render.canvas);
@@ -219,9 +260,10 @@ function start() {
 }
 
 function playTone(n) {
-	if(!isMuted) {
-		tones.play(n);
-	}
+	// if(!isMuted && new Date() - prevDate > 100) {
+	// 	prevDate = new Date();
+	// 	window.tones.play(n);
+	// }
 }
 
 function createBounds() {
@@ -283,8 +325,7 @@ function addPolygon(index) {
 			fillStyle: greyColor
 		}
 	} );
-	var forceMultiplier = w / 100;
-	Body.setVelocity(b, {x:(Math.random()*2 -1),y:(Math.random()*2 -1)});
+	Body.setVelocity(b, {x:(Math.random()*2 -1)*5,y:(Math.random()*2 -1)*5});
 	b.color = b.render.strokeStyle = colors[index];
 	b.note =  notes[index];
 	shapes.push(b);
@@ -437,6 +478,9 @@ function tick(t) {
 		engine.world.gravity.y = tiltFB < 0 ? -gx : gx;
 	}
 
+	return;
+
+
 }
 
 
@@ -468,11 +512,3 @@ function updateConstraint() {
 
 
 
-function deviceOrientationHandler(tiltLR, tiltFB, dir) {
-	document.getElementById("gx").innerHTML = "gx " + Math.round(engine.world.gravity.x);
-	document.getElementById("gy").innerHTML = "gy " + Math.round(engine.world.gravity.y);
-	document.getElementById("lr").innerHTML = "lr " + Math.round(tiltLR);
-	document.getElementById("fb").innerHTML = "fb " + Math.round(tiltFB);
-	document.getElementById("dir").innerHTML = "dir " + Math.round(tiltFB);
-
-}

@@ -7583,8 +7583,6 @@ var RenderPixi = {};
             sprite.position.x = body.position.x;
             sprite.position.y = body.position.y;
             sprite.rotation = body.angle;
-            sprite.scale.x = bodyRender.scaleX;
-            sprite.scale.y = bodyRender.scaleY;
 
         } else {
             var primitiveId = 'b-' + body.id,
