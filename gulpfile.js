@@ -38,7 +38,7 @@ gulp.task('html', ['styles', 'scripts'], function () {
         .pipe(cssFilter.restore())
         .pipe($.useref.restore())
         .pipe($.useref())
-        .pipe(gulp.dest('live'))
+        .pipe(gulp.dest('./'))
         .pipe($.size());
 });
 
@@ -49,7 +49,7 @@ gulp.task('images', function () {
             progressive: true,
             interlaced: true
         })))
-        // .pipe(gulp.dest('live'))
+        .pipe(gulp.dest('./'))
         .pipe($.size());
 });
 
@@ -57,20 +57,17 @@ gulp.task('fonts', function () {
     return gulp.src('app/fonts')
         .pipe($.filter('*.{eot,svg,ttf,woff}'))
         .pipe($.flatten())
-        .pipe(gulp.dest('live/fonts'))
+        .pipe(gulp.dest('./fonts'))
         .pipe($.size());
 });
 
 gulp.task('extras', function () {
     return gulp.src(['app/*.*',  '!app/*.html'], { dot: true })
-        .pipe(gulp.dest('live'));
+        .pipe(gulp.dest('./'));
 });
 
-gulp.task('clean', function () {
-    return gulp.src(['.tmp', 'live'], { read: false }).pipe($.clean());
-});
 
-gulp.task('build', ['html', 'fonts', 'images', 'extras']);
+gulp.task('build', ['html', 'fonts', 'images']);
 
 gulp.task('default', ['clean'], function () {
     gulp.start('build');

@@ -25,7 +25,7 @@ var draggingCircle = false;
 var isMuted = false;
 
 var containerNode = document.getElementById("container");
-var colors = ["#187ddf","#fb9920","#ec2433", "#28d985"];
+var colors = ["#1081de","#fb9920","#5c1f43", "#1cd988"];
 var redColor = "#ec2433"; 
 // var greyColor = "red";
 var greyColor = "#f1eadd";
