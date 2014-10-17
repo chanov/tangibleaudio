@@ -280,8 +280,8 @@ function createBounds() {
 		isStatic: true,
 		render: {
 			// strokeStyle:  "#fff000",
-			strokeStyle:  "#f5eee3",
-			fillStyle:  "#f5eee3",
+			strokeStyle:  greyColor,
+			fillStyle:  greyColor,
 			strokeWidth:0
 		}
 	};
