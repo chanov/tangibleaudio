@@ -70,7 +70,7 @@ gulp.task('clean', function () {
     return gulp.src(['.tmp', '../live'], { read: false }).pipe($.clean());
 });
 
-gulp.task('build', ['html', 'images',  'extras']);
+gulp.task('build', ['html',  'extras']);
 
 gulp.task('default', ['clean'], function () {
     gulp.start('build');

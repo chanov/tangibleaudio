@@ -25,10 +25,10 @@ var draggingCircle = false;
 var isMuted = false;
 
 var containerNode = document.getElementById("container");
-var colors = ["#7eccdd","#fdd052","#f9ab58", "#8dcdb0"];
-var redColor = "#e42532"; 
+var colors = ["#187ddf","#fb9920","#ec2433", "#28d985"];
+var redColor = "#ec2433"; 
 // var greyColor = "red";
-var greyColor = "#f5eee3";
+var greyColor = "#f1eadd";
 
 var isThankYou = window.location.hash ? (window.location.hash.substring(1)=="thankyou") : false;
 var iOS = /(iPad|iPhone|iPod)/g.test( navigator.userAgent );
